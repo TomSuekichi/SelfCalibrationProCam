@@ -1,0 +1,4 @@
+ofxBasicFunc
+ofxCVfunc
+ofxGui
+ofxTimeMeasurements-master
