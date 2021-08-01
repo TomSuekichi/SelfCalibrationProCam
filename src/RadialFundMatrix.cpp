@@ -13,14 +13,17 @@ void RadialFundMatrix::setup(vector<ofVec2f>& _camPosSet, vector<ofVec2f>& _proP
 }
 
 void RadialFundMatrix::drawTest(int _num) {
-	//ofSetColor(255, 0, 0);
+	ofSetColor(255);
 	ofSetLineWidth(1);
-	ofDrawLine(inlierCamPos[_num] / 5, inlierProPos[_num] * ofVec2f(float(camW) / proW, float(camH) / proH) / 5 + ofVec2f(camW / 5, 0));
+	//ofDrawLine(inlierCamPos[_num] / 5, inlierProPos[_num] * ofVec2f(float(camW) / proW, float(camH) / proH) / 5 + ofVec2f(camW / 5, 0));
 
-	//for (int i = 0; i < inlierCamPos.size(); i++) {
-	//	ofSetHSVColor(i * 360 / inlierCamPos.size(), 100, 100);
-	//	ofDrawLine(inlierCamPos[i] / 5, inlierProPos[i]*ofVec2f(float(camW)/proW, float(camH)/ proH) / 5 + ofVec2f(camW / 5, 0));
-	//}
+	for (int i = 0; i < inlierCamPos.size(); i++) {
+		if (i % 15000 == 0) {
+			//ofSetHSVColor(i * 360 / inlierCamPos.size(), 100, 100);
+			ofDrawLine(inlierCamPos[i] / 5, inlierProPos[i] * ofVec2f(float(camW) / proW, float(camH) / proH) / 5 );
+		}
+	}
+	ofSetColor(255);
 }
 
 void RadialFundMatrix::calcLoop() {
@@ -29,7 +32,7 @@ void RadialFundMatrix::calcLoop() {
 	maxInlierNum = 0;
 	preInlierCamPos.clear();
 	preInlierProPos.clear();
-	for (int k = 0; k < 1000; k++) {
+	for (int k = 0; k < 100; k++) {
 		randomNums.clear();
 		bool isNum = false;
 		inlierNum = 0;
@@ -103,36 +106,71 @@ void RadialFundMatrix::calcLoop() {
 	FundMat = calcInitialFundMat(optimizedRadialFundMat, ac, bc, ap, bp, dc, dp);
 	EssentialMat = calcInitialEssentialMat(FundMat, fc, fp, ac, bc, ap, bp);
 	JacobiSVD<MatrixXd> svdE(EssentialMat, ComputeThinU | ComputeThinV);
-	MatrixXd MatZ = MatrixXd::Zero(3, 3);
-	MatrixXd MatW = MatrixXd::Zero(3, 3);
-	MatZ(0, 1) = 1; MatZ(1, 0) = -1;
-	MatW(0, 1) = -1; MatW(1, 0) = 1; MatW(2, 2) = 1;
-	VectorXd e3(3);
-	e3 << 0, 0, 1;
-	printf("\n");
-	std::cout << e3 << std::endl;
+	printf("sing\n");
+	std::cout << svdE.singularValues() << std::endl;
+	MatrixXd matD;
+	Vector4d diag;
+	diag << 1, 1, 0;
+	matD = diag.asDiagonal();
+	EssentialMat = svdE.matrixU()*matD*(svdE.matrixV().transpose());
+	std::cout << EssentialMat << std::endl;
 
-	printf("\n");
-	std::cout << svdE.matrixU() << std::endl;
-	VectorXd t1(3);
-	t1 << svdE.matrixU()(0, 2), svdE.matrixU()(1, 2), svdE.matrixU()(2, 2);
-	MatrixXd R1 = svdE.matrixU()*MatW*svdE.matrixV().transpose();
-	MatrixXd R2 = svdE.matrixU()*MatW.transpose()*svdE.matrixV().transpose();
-	//MatrixXd t2 = -svdE.matrixU()*MatZ*svdE.matrixU().transpose();
-	printf("\n");
-	std::cout << t1 << std::endl;
-	//std::cout << t2 << std::endl;
-	printf("\n");
-	std::cout << R1 << std::endl;
-	std::cout << R2 << std::endl;
+	//5
+	FundMat = MatKp.transpose()*EssentialMat*MatKc;
+	std::cout << FundMat << std::endl;
 
-	ofVec3f Angle = computeAnglesFromMatrix(R1);
-	Angle = Angle * 360 / (2 * PI);
-	printf("%f, %f, %f", Angle.x, Angle.y, Angle.z);
-	ofVec3f Angle2 = computeAnglesFromMatrix(R2);
-	Angle2 = Angle2 * 360 / (2 * PI);
-	printf("%f, %f, %f", Angle2.x, Angle2.y, Angle2.z);
+	//MatrixXd MatZ = MatrixXd::Zero(3, 3);
+	//MatrixXd MatW = MatrixXd::Zero(3, 3);
+	//MatZ(0, 1) = 1; MatZ(1, 0) = -1;
+	//MatW(0, 1) = -1; MatW(1, 0) = 1; MatW(2, 2) = 1;
+	//VectorXd e3(3);
+	//e3 << 0, 0, 1;
+	//printf("\n");
+	//std::cout << e3 << std::endl;
+
+	//printf("\n");
+	//std::cout << svdE.matrixU() << std::endl;
+	//VectorXd t1(3);
+	//t1 << svdE.matrixU()(0, 2), svdE.matrixU()(1, 2), svdE.matrixU()(2, 2);
+	//MatrixXd R1 = svdE.matrixU()*MatW*svdE.matrixV().transpose();
+	//MatrixXd R2 = svdE.matrixU()*MatW.transpose()*svdE.matrixV().transpose();
+	//MatrixXd MatR = R1.transpose()*R2;
+	////MatrixXd t2 = -svdE.matrixU()*MatZ*svdE.matrixU().transpose();
+	//printf("\n");
+	//std::cout << t1 << std::endl;
+	////std::cout << t2 << std::endl;
+	//printf("\n");
+	//std::cout << R1 << std::endl;
+	//std::cout << R2 << std::endl;
+	//std::cout << MatR << std::endl;
+
+	//ofVec3f Angle1 = computeAnglesFromMatrix(R1);
+	//Angle1 = Angle1 * 360 / (2 * PI);
+	//printf("%f, %f, %f\n", Angle1.x, Angle1.y, Angle1.z);
+	//ofVec3f Angle2 = computeAnglesFromMatrix(R2);
+	//Angle2 = Angle2 * 360 / (2 * PI);
+	//printf("%f, %f, %f\n", Angle2.x, Angle2.y, Angle2.z);
+	//ofVec3f Angle = computeAnglesFromMatrix(MatR);
+	//Angle = Angle * 360 / (2 * PI);
+	//printf("%f, %f, %f\n", Angle.x, Angle.y, Angle.z);
 }
+
+void RadialFundMatrix::optimizedLM(MatrixXd _MatF, ofVec2f _pp, ofVec2f _pc, double _dp, double _dc) {
+	const int num = 15;
+	int info;
+
+	VectorXd p(num);
+	p << _MatF(0, 0), _MatF(0, 1), _MatF(0, 2), _MatF(1, 0), _MatF(1, 1), _MatF(1, 2), _MatF(2, 0), _MatF(2, 1), _MatF(2, 2), _pp.x, _pp.y, _pc.x, _pc.y, _dp, _dc;
+
+	vector<double> camX, camY, proX, proY;
+	for (int i = 0; i < camPosSet.size(); i++) {
+		camX.push_back(camPosSet[i].x);
+		camY.push_back(camPosSet[i].y);
+		proX.push_back(proPosSet[i].x);
+		proY.push_back(proPosSet[i].y);
+	}
+}
+
 ofVec2f RadialFundMatrix::calcInitialDistortion(MatrixXd _radialFundMat, float _ac, float _bc, float _ap, float _bp) {
 	double ab_c = pow(_ac, 2) + pow(_bc, 2);
 	double ab_p = pow(_ap, 2) + pow(_bp, 2);
@@ -158,6 +196,7 @@ MatrixXd RadialFundMatrix::calcInitialFundMat(MatrixXd _radialFundMat, float _ac
 	MatrixXd MatDcT_inv = ((MatDc*MatDc.transpose()).inverse())*(MatDc);
 	MatrixXd mat1 = MatDc * MatDcT_inv.transpose();
 	MatrixXd mat2 = MatDpT_inv * MatDp.transpose();
+	printf("mat1, mat2\n");
 	std::cout << mat1 << std::endl;
 	std::cout << mat2 << std::endl;
 	MatF = MatDpT_inv * _radialFundMat*MatDcT_inv.transpose();
@@ -166,13 +205,13 @@ MatrixXd RadialFundMatrix::calcInitialFundMat(MatrixXd _radialFundMat, float _ac
 }
 
 MatrixXd RadialFundMatrix::calcInitialEssentialMat(MatrixXd _fundMat, float _fc, float _fp, float _pc, float _qc, float _pp, float _qp) {
-	MatrixXd MatKc = MatrixXd::Identity(3, 3);
-	MatrixXd MatKp = MatrixXd::Identity(3, 3);
+	MatKc = MatrixXd::Identity(3, 3);
+	MatKp = MatrixXd::Identity(3, 3);
 	MatKc(0, 0) = _fc; MatKc(1, 1) = _fc; MatKc(0, 2) = _pc; MatKc(1, 2) = _qc;
 	MatKp(0, 0) = _fp; MatKp(1, 1) = _fp; MatKp(0, 2) = _pp; MatKp(1, 2) = _qp;
 	
 	MatrixXd MatE;
-	MatE = MatKp.inverse().transpose()*_fundMat*MatKc.inverse();
+	MatE = MatKp.transpose().inverse()*_fundMat*MatKc.inverse();
 	std::cout << MatE << std::endl;
 	return MatE;
 }
@@ -246,7 +285,7 @@ MatrixXd RadialFundMatrix::calcfundMat(vector<ofVec4f> _camPosSet, vector<ofVec4
 	//std::cout << matF(2) << std::endl;
 	//std::cout << matF(3) << std::endl;
 	printf("\n");
-	return matF;
+	return matE;
 }
 
 ofVec3f RadialFundMatrix::computeAnglesFromMatrix(MatrixXd _MatR) {
